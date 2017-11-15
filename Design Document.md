@@ -32,6 +32,8 @@ The core of the Housing Market Monitoring System are:
 
 ## High level design diagram
 
+![High Level Design Diagram](high-level-design-diagram.png "High Level Design Diagram")
+
 ## Detailed design
 
 ## Future work
