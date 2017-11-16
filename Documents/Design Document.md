@@ -46,11 +46,11 @@ Leaflet | 1. Open source, plenty of plugins, good documentation 2. Offering the 
 Angular | 1. Angular is a complete frontend MVC framework, which is better than React at handling complex logic. 2. Frontend's logic can become very complex when the size of the dataset grows larger and larger.
 Node.js | 1. The web server is heavy at I/O operations (reading database) rather than computation 2. Node excels at contructing a non-blocking server with little resources using its single thread event loop structure 3. JavaScript, same as the language used in the client side app
 
-* Average Prices of all the markets (Regions are shaded in propotion to the measurement of the statistical variables)
+* UI example 1: average prices of all the markets (Regions are shaded in propotion to the measurement of the statistical variables)
 
 ![ui-design-choropleth-map](ui-design-choropleth-map.png "ui-design-choropleth-map")
 
-* New Listings in one selected region
+* UI example 2: new listings in one selected region
 
 ![ui-design-markers](ui-design-markers.png "ui-design-markers")
 
