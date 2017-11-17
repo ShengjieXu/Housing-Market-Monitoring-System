@@ -36,7 +36,7 @@ The core of the Housing Market Monitoring System are:
 
 ## Detailed design
 
-### Frontend Services
+### Modules Design Web Servers
 
 ![modules-design-web-servers](modules-design-web-servers.png "modules-design-web-servers")
 
@@ -54,7 +54,9 @@ Node.js | 1. The web server is heavy at I/O operations (reading database) rather
 
 ![ui-design-markers](ui-design-markers.png "ui-design-markers")
 
+### Modules Design Backend Servers
 
+![modules-design-backend-servers](modules-design-backend-servers.png "modules-design-backend-servers")
 
 
 ## Future work
