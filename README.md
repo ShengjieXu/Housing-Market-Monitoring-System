@@ -1,2 +1,9 @@
 # Housing-Market-Monitoring-System
-Monitoring online housing listings and visualizations on aggregated housing prices as well as newly added listings 🤖
+
+## Overview
+
+This system monitors the housing market in real time and provides visualizations on analytical statistics in a scalable and evolvable way 🤖 
+
+## [Design Document](./Documents/Design%20Document.md)
+
+## Quick Start
