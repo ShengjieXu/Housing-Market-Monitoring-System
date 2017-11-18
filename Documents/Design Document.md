@@ -7,28 +7,16 @@ This document will discuss the high-level design, modularization, interactions b
 The core of the Housing Market Monitoring System are:
 
 1. Web scrapers which continuously collect housing listings from Craigslist, where each scraper focus on one subsite (e.g. orangecounty.craigslist.org).
-
 1. Duplicates elimination services
-
 1. Geotagging services
-
 1. Analytical services
-
 1. A database that stores all the listings and the analytical results for each subsite
-
 1. A map based visualization application
 
 ## Main use cases
 
 * Visualize (median, average...) housing prices of different regions
-
 * Display newest listings in a particular region
-
-* (Future) Display pricing history
-
-* (Future) Notify users about new listings
-
-* (Future) Predict price changes
 
 ## High level design diagram
 
@@ -65,8 +53,23 @@ SOA/[Decoupling](https://www.cloudamqp.com/blog/2016-10-12-why-is-application-de
 RPC | 1. Backend APIs are used internally, so the "client" can be updated accordingly when the server's APIs change. <br> 2. Evolvability, allows for future action-based APIs (e.g. send crawling commands)
 Python | 1. Maintainability, scalability, clean platform, more standardized than Node.js, [see comparisons here](https://www.agriya.com/blog/2016/07/13/nodejs-vs-python-where-to-use-and-where-not/). <br> 2. Code reuse, same language used in the data pipeline.
 Redis | 1. Performance, caching, flexible, in-memory key value data structure store, and reliable, persistence to disk. <br> 2. Better than memcached, more scalable, handle heavy reads and writes, [see more here](https://www.linkedin.com/pulse/memcached-vs-redis-which-one-pick-ranjeet-vimal/), and [here](https://stackoverflow.com/questions/10558465/memcached-vs-redis)
-MongoDB | 1. More scalable than RDBMS, dynamic schemas, data locality, [see more here](https://www.mongodb.com/compare/mongodb-mysql?jmp=docs) <br> 2. JSON-like documents, friendly to JavaScript
+MongoDB | 1. More scalable than RDBMS, dynamic schemas, data locality, [see more here](https://www.mongodb.com/compare/mongodb-mysql?jmp=docs) <br> 2. No complex transactions needed. <br> 3. JSON-like documents, friendly to JavaScript
 
+### Modules Design Data Pipelines
+
+![modules-design-data-pipelines](modules-design-data-pipelines.png "modules-design-data-pipelines")
+
+Design Choices | Reasons
+--- | ---
+(1) listing_monitor.py: Scrape url and time in the search page <br> (2) listing_deduper.py: use url and time to deduplicate. <br> (3) listing_fetcher.py: scrape id, prices, geo, title, name, and any other useful information <br> (4) listing_upserter.py: insert new listings or update existing listings. | 1. When a listing is updated, its url stays the same, but its time is changed to the time when the update occurs. Updated listings should be scraped as well. <br> 2. Together url and time uniquely determine if a listing has been scraped or not. Using a Bloom filter for deduplication to handle billions of URL/time combinations. <br> 3. Fetch detailed information about this listing. Since geo data only exists in the contents page and contents page has everything that is on the search page, contents scraping should be done inside the contents page. <br> 4. Map real-world behaviors to the data models.
+Bloom filter | 1. Space efficient way to deduplicate billions of records, using Redis, 256MB of RAM can deduplicate 93 million records with a false positive rate of 8.56e-05. <br> 2. Consume quite a lot of memory, so put it in a dedicated service, possibily a separate host.
+SOA/[Decoupling](https://www.cloudamqp.com/blog/2016-10-12-why-is-application-decoupling-a-good-thing.html) | 1. Easier to maintain code and change implementations as different parts of the system can evolve independently. <br> 2. Cross-platform, different languages and technologies. <br> 3. Scale slower modules to resolve bottleneck.
+Store each region's data in their own tables | 1. Structure the DB, make region-based queries faster.
 
 ## Future work
 
+* Support different measurement of the statistical variables from average prices to median prices, etc.
+* Add filters that can specify what to display in the new listings view.
+* Rank new listings based on price/time/... and display the rank number on the marker
+* Display (monthly) pricing history.
+* Predict price changes.
