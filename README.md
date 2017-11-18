@@ -52,7 +52,7 @@ This system monitors the housing market in real time and provides visualizations
 * Pip
 
     ```sh
-    sudo apt install python-pip
+    sudo apt install -y python-pip
     ```
 
 ## Deployment
