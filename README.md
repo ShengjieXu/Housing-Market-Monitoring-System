@@ -44,7 +44,8 @@ This system monitors the housing market in real time and provides visualizations
     wget http://download.redis.io/releases/redis-4.0.2.tar.gz
     tar xzf redis-4.0.2.tar.gz
     cd redis-4.0.2
-    make
+    sudo make
+    sudo make install
     cd utils
     sudo ./install_server.sh
     ```
