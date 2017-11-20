@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Scrape all regions"""
 
 from bs4 import BeautifulSoup
