@@ -36,3 +36,8 @@ class Client(object):
             return json.loads(body)
         self.logger.info("No message returned from %s", self.queue_name)
         return None
+
+    def sleep(self, seconds):
+        """BlockingConnection.sleep is a safer way to sleep than time.sleep(). This
+        will repond to server's heartbeat."""
+        self.connection.sleep(seconds)
