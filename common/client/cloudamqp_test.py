@@ -1,6 +1,6 @@
 """basic test for cloudamqp client"""
 
-from cloudamqp import Client
+from cloudamqp import CloudAMQPClient
 import logging
 
 QUEUE_URL = "amqp://zsjdmkfu:x1LwP5IRoZjs7C1LWpMK7_87OdxLoQnM@donkey.rmq.cloudamqp.com/zsjdmkfu"
@@ -8,7 +8,7 @@ QUEUE_NAME = "test"
 
 def test_basic():
     """smoke test"""
-    client = Client(QUEUE_URL, QUEUE_NAME)
+    client = CloudAMQPClient(QUEUE_URL, QUEUE_NAME)
 
     message = {"name": "test", "value": "123"}
     client.publish(message)

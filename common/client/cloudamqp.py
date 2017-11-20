@@ -4,7 +4,7 @@ import json
 import logging
 import pika
 
-class Client(object):
+class CloudAMQPClient(object):
     """CloudAMQP client class"""
 
     def __init__(self, queue_url, queue_name):
