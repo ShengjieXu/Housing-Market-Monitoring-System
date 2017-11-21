@@ -2,22 +2,24 @@
 
 """housing listing monitor"""
 
-import threading
+import datetime
 import logging
 import os
 import sys
+import threading
+import time
 try:
     from Queue import Queue  # PY2
 except ImportError:
     from queue import Queue  # PY3
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "client"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "logger"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "scraper"))
 
 import redis
 from six import iteritems
 from six.moves import range
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "client"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "logger"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "scraper"))
 from cloudamqp import CloudAMQPClient
 from cl_listing_scraper import ListingScraper
 from default_logger import set_default_dual_logger
@@ -25,7 +27,8 @@ from default_logger import set_default_dual_logger
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 
-SLEEP_TIME_IN_SECONDS = 10
+MONITOR_SLEEP_TIME = 3600 * 6   # seconds
+CLOUDAMQP_CLIENT_SLEEP_TIME = 10    # seconds
 LISTING_TIME_OUT_IN_SECONDS = 3600 * 24 * 3
 
 SCRAPE_LISTINGS_TASK_QUEUE_URL = "amqp://zsjdmkfu:x1LwP5IRoZjs7C1LWpMK7_87OdxLoQnM@donkey.rmq.cloudamqp.com/zsjdmkfu"
@@ -63,17 +66,7 @@ def monitor(workers=8):
     logger = logging.getLogger(__name__)
 
     redis_client = redis.StrictRedis(REDIS_HOST, REDIS_PORT)
-    queue = Queue()
-    scrapers = {}
-    scrape_task_sent_count = 0
-
-    # TODO: while True:
-    # Map thread identification to its cloudamqp_client
-    cloudamqp_clients = {}
-
-    for region, category in iteritems(SEEDS):
-        queue.put({"region": region, "category": category, "start": 0})
-        logger.info("Thread task queue: initial add: (%s, %s, %s)", region, category, 0)
+    scrapers = {}   # Map region to its scraper
 
     def scrape_listings():
         """
@@ -92,12 +85,12 @@ def monitor(workers=8):
         while not queue.empty():
             task = queue.get(block=True)
 
-            scraper = scrapers.get(task["region"])
+            scraper = scrapers.get(task["region"])  # getSet scraper
             if scraper is None:
                 scraper = ListingScraper(task["region"], task["category"])
                 scrapers[task["region"]] = scraper
 
-            num_of_listings = 0
+            num_of_listings_sent = 0
             total_so_far = task["start"]
             logger.info("Thread_%s working on (%s, %s, %s)", threading.current_thread().ident,
                         task["region"], task["category"], task["start"])
@@ -106,7 +99,7 @@ def monitor(workers=8):
                 total_so_far = max(total_so_far, listing["total_so_far"])
 
                 if redis_client.get(listing["url"]) is None:
-                    num_of_listings += 1
+                    num_of_listings_sent += 1
 
                     redis_client.set(listing["url"], listing["url"])
                     redis_client.expire(listing["url"], LISTING_TIME_OUT_IN_SECONDS)
@@ -118,30 +111,44 @@ def monitor(workers=8):
                 queue.put(task)
                 logger.info("Thread task queue: add new task: (%s, %s, %s)",
                             task["region"], task["category"], task["start"])
-            
+
             queue.task_done()
             logger.info(" [x] Region=%s, total_processed=%s, published=%s, active_threads=%s",
-                        task["region"], total_so_far, num_of_listings, threading.active_count())
-            scrape_task_sent_count += num_of_listings
-            
-            cloudamqp_client.sleep(SLEEP_TIME_IN_SECONDS)
+                        task["region"], total_so_far,
+                        num_of_listings_sent, threading.active_count())
 
-    threads = []
-    for _ in range(workers):
-        thread = threading.Thread(target=scrape_listings)
-        thread.start()
-        threads.append(thread)
+            cloudamqp_client.sleep(CLOUDAMQP_CLIENT_SLEEP_TIME)
 
-    queue.join()
-    logger.info("Queue terminated")
-    for thread in threads:
-        thread.join()
-    logger.info("Threads terminated")
+    while True:
+        cloudamqp_clients = {}  # Map thread identification to its cloudamqp_client
 
-    for _, client in iteritems(cloudamqp_clients):
-        client.close()
-    logger.info("CloudAMQP connections are all closed")
-    logger.info("Scrape task sent=%s", scrape_task_sent_count)
+        queue = Queue() # Init thread tasks queue
+        for region, category in iteritems(SEEDS):
+            queue.put({"region": region, "category": category, "start": 0})
+            logger.info("Thread task queue: initial add: (%s, %s, %s)", region, category, 0)
+
+        threads = []
+        for _ in range(workers):
+            thread = threading.Thread(target=scrape_listings)
+            thread.start()
+            threads.append(thread)
+
+        queue.join()    # Block until all tasks in the queue are completed
+        logger.info("Queue terminated")
+
+        for thread in threads:
+            thread.join()
+        logger.info("Threads terminated")
+
+        for _, client in iteritems(cloudamqp_clients):
+            client.close()
+        logger.info("CloudAMQP connections are all closed")
+
+        logger.info("(UTC) %s Sleeping... Next execution: %s",
+                    datetime.datetime.now(),
+                    datetime.datetime.now() +
+                    datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME))
+        time.sleep(MONITOR_SLEEP_TIME)
 
 
 if __name__ == "__main__":
