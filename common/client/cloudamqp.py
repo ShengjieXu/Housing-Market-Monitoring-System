@@ -43,3 +43,19 @@ class CloudAMQPClient(object):
         """BlockingConnection.sleep is a safer way to sleep than time.sleep(). This
         will repond to server's heartbeat."""
         self.connection.sleep(seconds)
+
+
+def clear_queue(queue_url, queue_name):
+    """clear the contents of the queue by sending get requests"""
+    logger = logging.getLogger(__name__)
+    client = CloudAMQPClient(queue_url, queue_name)
+
+    num_of_messages = 0
+
+    while True:
+        if client is not None:
+            msg = client.get()
+            if msg is None:
+                logger.info("Cleared %d messages.", num_of_messages)
+                return
+            num_of_messages += 1
