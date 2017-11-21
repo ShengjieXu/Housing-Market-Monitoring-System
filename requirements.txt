@@ -1,3 +1,7 @@
 beautifulsoup4
 pika
+pymongo
+python-jsonrpc
+redis
 requests
+six

@@ -17,7 +17,6 @@ import requests
 import cl_region_scraper
 
 ALL_REGIONS = cl_region_scraper.get_all_regions()
-RESULTS_PER_REQUEST = 120
 
 USER_AGENTS_FILE = os.path.join(os.path.dirname(__file__), "user_agents.txt")
 USER_AGENTS = []
@@ -49,7 +48,7 @@ def requests_get(*args, **kwargs):
     session_requests = requests.session()
     headers = get_headers()
     if logger:
-        logger.debug("request_detail:params=%s,header=%s", kwargs["params"], headers)
+        logger.debug("request_detail:params=%s,header=%s", kwargs.get("params"), headers)
     try:
         return session_requests.get(*args, headers=headers, **kwargs)
     except RequestException as exc:
@@ -86,34 +85,28 @@ class ListingScraper(object):
         results_yielded = 0
         total = 0
 
-        while True:
-            params = {"s": start}
-            response = requests_get(self.url, params=params, logger=self.logger)
-            self.logger.info("GET %s", response.url)
-            self.logger.info("Response code: %s", response.status_code)
-            response.raise_for_status()
+        params = {"s": start}
+        response = requests_get(self.url, params=params, logger=self.logger)
+        self.logger.info("GET %s", response.url)
+        self.logger.info("Response code: %s", response.status_code)
+        response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, "html.parser")
-            if not total:
-                totalcount = soup.find("span", {"class": "totalcount"})
-                total = int(totalcount.text) if totalcount else 0
+        soup = BeautifulSoup(response.content, "html.parser")
+        if not total:
+            totalcount = soup.find("span", {"class": "totalcount"})
+            total = int(totalcount.text) if totalcount else 0
 
-            for listing in soup.find_all("p", {"class": "result-info"}):
-                if limit is not None and results_yielded >= limit:
-                    break
-                self.logger.debug("Processing %s of %s results ...",
-                                  total_so_far + 1, total)
-
-                link = listing.find("a", {"class": "hdrlnk"})
-                url = urljoin(self.url, link.attrs["href"])
-                self.logger.debug("URL=%s", url)
-
-                yield url
-                results_yielded += 1
-                total_so_far += 1
-
+        for row in soup.find_all("p", {"class": "result-info"}):
             if limit is not None and results_yielded >= limit:
                 break
-            if (total_so_far - start) < RESULTS_PER_REQUEST:
-                break
-            start = total_so_far
+            self.logger.debug("Processing %s of %s results ...", total_so_far + 1, total)
+
+            link = row.find("a", {"class": "hdrlnk"})
+            url = urljoin(self.url, link.attrs["href"])
+            self.logger.debug("URL=%s", url)
+
+            results_yielded += 1
+            total_so_far += 1
+            listing = {"url": url, "total_so_far": total_so_far}
+            yield listing
+
