@@ -9,7 +9,7 @@ import pika
 class CloudAMQPClient(object):
     """CloudAMQP client class"""
 
-    def __init__(self, queue_url, queue_name):
+    def __init__(self, queue_url, queue_name, durable=False):
         self.logger = logging.getLogger(__name__)
         self.queue_url = queue_url
         self.queue_name = queue_name
@@ -17,16 +17,26 @@ class CloudAMQPClient(object):
         self.params.socket_timeout = 5
         self.connection = pika.BlockingConnection(self.params)
         self.channel = self.connection.channel() # start a channel
-        self.channel.queue_declare(queue=queue_name) # Declare a queue
+        self.channel.queue_declare(queue=queue_name, durable=durable) # Declare a queue
+        self.channel.basic_qos(prefetch_count=1) # qos: deliver <= 1 message to each client
         self.logger.debug("CloudAMQP: queue_name=%s, queue_url=%s initialized",
                           queue_name, queue_url)
 
-    def publish(self, message):
+    def publish(self, message, durable=False):
         """publish message"""
-        self.channel.basic_publish(
-            exchange='',
-            routing_key=self.queue_name,
-            body=json.dumps(message))
+        if durable:
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=self.queue_name,
+                body=json.dumps(message),
+                properties=pika.BasicProperties(
+                         delivery_mode = 2, # make message persistent
+                ))
+        else:
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=self.queue_name,
+                body=json.dumps(message))
         self.logger.info(" [x] Sent %s to %s", message, self.queue_name)
 
     def get(self):
@@ -43,12 +53,16 @@ class CloudAMQPClient(object):
         """BlockingConnection.sleep is a safer way to sleep than time.sleep(). This
         will repond to server's heartbeat."""
         self.connection.sleep(seconds)
+    
+    def close(self):
+        """close the connection"""
+        self.connection.close()
 
 
-def clear_queue(queue_url, queue_name):
+def clear_queue(queue_url, queue_name, durable=False):
     """clear the contents of the queue by sending get requests"""
     logger = logging.getLogger(__name__)
-    client = CloudAMQPClient(queue_url, queue_name)
+    client = CloudAMQPClient(queue_url, queue_name, durable)
 
     num_of_messages = 0
 
@@ -59,3 +73,5 @@ def clear_queue(queue_url, queue_name):
                 logger.info("Cleared %d messages.", num_of_messages)
                 return
             num_of_messages += 1
+
+    client.close()
