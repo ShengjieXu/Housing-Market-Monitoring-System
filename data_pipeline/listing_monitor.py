@@ -3,6 +3,7 @@
 """housing listing monitor"""
 
 import datetime
+import json
 import logging
 import os
 import sys
@@ -24,31 +25,29 @@ from cloudamqp import CloudAMQPClient
 from cl_listing_scraper import ListingScraper
 from default_logger import set_default_dual_logger
 
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "..", "common", "config", "config.json")
+with open(CONFIG_FILE) as json_config_file:
+    CONFIG = json.load(json_config_file)
 
-MONITOR_SLEEP_TIME = 3600 * 6   # seconds
-CLOUDAMQP_CLIENT_SLEEP_TIME = 10    # seconds
-LISTING_TIME_OUT_IN_SECONDS = 3600 * 24 * 3
+REDIS_HOST = CONFIG["redis"]["host"]
+REDIS_PORT = CONFIG["redis"]["port"]
 
-SCRAPE_LISTINGS_TASK_QUEUE_URL = "amqp://zsjdmkfu:x1LwP5IRoZjs7C1LWpMK7_87OdxLoQnM@donkey.rmq.cloudamqp.com/zsjdmkfu"
-SCRAPE_LISTINGS_TASK_QUEUE_NAME = "hmms-scrape-listings-task-queue"
+MONITOR_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["monitor"]["sleep_time_in_seconds"]
+CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["cloudamqp"]["client"]["sleep_time_in_seconds"]
+LISTING_TIME_OUT_IN_SECONDS = CONFIG["listing"]["time_out_in_seconds"]
+
+SCRAPE_LISTINGS_TASK_QUEUE_URL = CONFIG["cloudamqp"]["scrape_listings_task_queue"]["url"]
+SCRAPE_LISTINGS_TASK_QUEUE_NAME = CONFIG["cloudamqp"]["scrape_listings_task_queue"]["name"]
 
 # Craigslist return 120 results per request
-RESULTS_PER_REQUEST = 120
+RESULTS_PER_REQUEST = CONFIG["craigslist"]["results_per_request"]
 
-NUM_OF_WORKER_THREADS = 8
+NUM_OF_WORKER_THREADS = CONFIG["listing"]["monitor"]["num_of_worker_threads"]
 
 LOG_FILE_NAME = "listing_monitor.log"
 
 # craigslist scraping seeds, {region: category}
-SEEDS = {"losangeles": "apa",
-         "sfbay": "apa",
-         "seattle": "apa",
-         "denver": "apa",
-         "austin": "apa",
-         "dallas": "apa",
-         "newyork": "aap"}
+SEEDS = CONFIG["craigslist"]["seeds"]
 
 
 def monitor(workers=8):
@@ -117,7 +116,7 @@ def monitor(workers=8):
                         task["region"], total_so_far,
                         num_of_listings_sent, threading.active_count())
 
-            cloudamqp_client.sleep(CLOUDAMQP_CLIENT_SLEEP_TIME)
+            cloudamqp_client.sleep(CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS)
 
     while True:
         cloudamqp_clients = {}  # Map thread identification to its cloudamqp_client
@@ -147,8 +146,8 @@ def monitor(workers=8):
         logger.info("(UTC) %s Sleeping... Next execution: %s",
                     datetime.datetime.now(),
                     datetime.datetime.now() +
-                    datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME))
-        time.sleep(MONITOR_SLEEP_TIME)
+                    datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME_IN_SECONDS))
+        time.sleep(MONITOR_SLEEP_TIME_IN_SECONDS)
 
 
 if __name__ == "__main__":
