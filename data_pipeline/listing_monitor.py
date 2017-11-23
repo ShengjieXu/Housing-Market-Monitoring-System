@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "clie
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common", "logger"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "scraper"))
 from cloudamqp import CloudAMQPClient
-from cl_listing_scraper import ListingScraper
+from listing import ListingScraper
 from default_logger import set_default_dual_logger
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "..", "common", "config", "config.json")
@@ -103,7 +103,8 @@ def monitor(workers=8):
                     redis_client.set(listing["url"], listing["url"])
                     redis_client.expire(listing["url"], LISTING_TIME_OUT_IN_SECONDS)
 
-                    cloudamqp_client.publish({"listing_url": listing["url"]})
+                    cloudamqp_client.publish({"url": listing["url"], "region": listing["region"],
+                                              "category": listing["category"]})
 
             if total_so_far - task["start"] >= RESULTS_PER_REQUEST:
                 task["start"] = total_so_far
