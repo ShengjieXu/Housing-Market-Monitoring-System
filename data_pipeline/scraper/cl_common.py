@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Share utility fucntions among scrapers"""
 
 import os
