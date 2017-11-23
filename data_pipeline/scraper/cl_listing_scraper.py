@@ -2,59 +2,15 @@
 
 """A class for monitoring the search page of housing listings"""
 
-import os
 import logging
-import random
 try:
     from urlparse import urljoin  # PY2
 except ImportError:
     from urllib.parse import urljoin  # PY3
 
 from bs4 import BeautifulSoup
-from requests.exceptions import RequestException
-import requests
 
-import cl_region_scraper
-
-ALL_REGIONS = cl_region_scraper.get_all_regions()
-
-USER_AGENTS_FILE = os.path.join(os.path.dirname(__file__), "user_agents.txt")
-USER_AGENTS = []
-
-
-with open(USER_AGENTS_FILE, "rb") as uaf:
-    for ua in uaf.readlines():
-        if ua:
-            USER_AGENTS.append(ua.strip()[1:-1])
-random.shuffle(USER_AGENTS)
-
-
-def get_headers():
-    """get request headers"""
-    user_agent = random.choice(USER_AGENTS)
-    headers = {
-        "User-Agent": user_agent
-    }
-    return headers
-
-
-def requests_get(*args, **kwargs):
-    """
-    Retries if a RequestException is raised (could be a connection error or
-    a timeout).
-    """
-
-    logger = kwargs.pop("logger", None)
-    session_requests = requests.session()
-    headers = get_headers()
-    if logger:
-        logger.debug("request_detail:params=%s,header=%s", kwargs.get("params"), headers)
-    try:
-        return session_requests.get(*args, headers=headers, **kwargs)
-    except RequestException as exc:
-        if logger:
-            logger.warning("Request failed (%s). Retrying ...", exc)
-        return session_requests.get(*args, headers=headers, **kwargs)
+import cl_common
 
 
 class ListingScraper(object):
@@ -68,7 +24,7 @@ class ListingScraper(object):
         self.logger = logging.getLogger(__name__)
 
         self.region = region
-        if self.region is None or self.region not in ALL_REGIONS:
+        if self.region is None or self.region not in cl_common.ALL_REGIONS:
             msg = "'%s' is not a valid region" % self.region
             self.logger.error(msg)
             raise ValueError(msg)
@@ -86,7 +42,7 @@ class ListingScraper(object):
         total = 0
 
         params = {"s": start}
-        response = requests_get(self.url, params=params, logger=self.logger)
+        response = cl_common.requests_get(self.url, params=params, logger=self.logger)
         self.logger.info("GET %s", response.url)
         self.logger.info("Response code: %s", response.status_code)
         response.raise_for_status()
@@ -109,4 +65,3 @@ class ListingScraper(object):
             total_so_far += 1
             listing = {"url": url, "total_so_far": total_so_far}
             yield listing
-
