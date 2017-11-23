@@ -143,7 +143,7 @@ def monitor(workers=8):
             client.close()
         logger.info("CloudAMQP connections are all closed")
 
-        logger.info("(UTC) %s Sleeping... Next execution: %s",
+        logger.info("%s Sleeping... Next execution: %s",
                     datetime.datetime.now(),
                     datetime.datetime.now() +
                     datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME_IN_SECONDS))
