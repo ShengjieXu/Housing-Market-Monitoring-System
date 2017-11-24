@@ -11,13 +11,15 @@ from six.moves import range
 
 from base import BaseScraper
 
+
 class DetailScraper(BaseScraper):
     """A class for scraping details from the details page"""
 
     def __init__(self, url=None, region=None, category=None):
         self.logger = logging.getLogger(__name__)
         if url is None or region is None or category is None:
-            msg = "Incomplete information: url=%s, region=%s, category=%s" % (url, region, category)
+            msg = "Incomplete information: url=%s, region=%s, category=%s" % (
+                url, region, category)
             self.logger.error(msg)
             raise ValueError(msg)
 
@@ -53,7 +55,8 @@ class DetailScraper(BaseScraper):
                 geo = {"latitude": lat, "longitude": lon}
 
         info_eles = soup.find("div", {"class": "postinginfos"})
-        craigslist_id = self.__parse_id(unicode(info_eles.find(string=re.compile(".*post id:.*"))))
+        craigslist_id = self.__parse_id(
+            unicode(info_eles.find(string=re.compile(".*post id:.*"))))
         post_datetime = ""
         update_datetime = ""
         for info_ele in info_eles:
@@ -63,11 +66,13 @@ class DetailScraper(BaseScraper):
                     for text in info_ele.stripped_strings:
                         if text.find("posted") != -1:
                             if time_ele.attrs.get("datetime"):
-                                post_datetime = time_ele.attrs.get("datetime").strip()
+                                post_datetime = time_ele.attrs.get(
+                                    "datetime").strip()
                             break
                         elif text.find("updated") != -1:
                             if time_ele.attrs.get("datetime"):
-                                update_datetime = time_ele.attrs.get("datetime").strip()
+                                update_datetime = time_ele.attrs.get(
+                                    "datetime").strip()
                             break
 
         city_ele = soup.find("span", {"class": "postingtitletext"})
@@ -108,13 +113,16 @@ class DetailScraper(BaseScraper):
                                 bath = bubble_ele.contents[2].string.strip()
                                 break
                             except (IndexError, AttributeError):
-                                self.logger.warning("Unable to parse bed & bath, bubble_ele=%s", bubble_ele)
+                                self.logger.warning(
+                                    "Unable to parse bed & bath, bubble_ele=%s", bubble_ele)
                         elif text == "ft":
                             try:
-                                size = bubble_ele.contents[0].string.strip() + "ft2"
+                                size = bubble_ele.contents[0].string.strip(
+                                ) + "ft2"
                                 break
                             except (IndexError, AttributeError):
-                                self.logger.warning("Unable to parse size, bubble_ele=%s", bubble_ele)
+                                self.logger.warning(
+                                    "Unable to parse size, bubble_ele=%s", bubble_ele)
 
         attrgroup_eles = soup.find_all("p", {"class": "attrgroup"})
         open_house_dates = []
@@ -123,10 +131,12 @@ class DetailScraper(BaseScraper):
             if isinstance(attrgroup_ele, Tag) and attrgroup_ele.find("span", {"class": "shared-line-bubble"}) is None:
                 for text in attrgroup_ele.stripped_strings:
                     if text == "open house dates":
-                        open_house_dates = [date for date in attrgroup_ele.stripped_strings][1:]
+                        open_house_dates = [
+                            date for date in attrgroup_ele.stripped_strings][1:]
                         break
-                features = [feature for feature in attrgroup_ele.stripped_strings]
-        
+                features = [
+                    feature for feature in attrgroup_ele.stripped_strings]
+
         body_ele = soup.find("section", {"id": "postingbody"})
         body = [line for line in body_ele.stripped_strings]
 
