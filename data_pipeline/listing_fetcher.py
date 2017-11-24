@@ -77,7 +77,8 @@ def fetch(workers=8):
                             task["url"], task["region"], task["category"])
                         scraper = DetailScraper(url=task["url"], region=task["region"], category=task["category"])
                         details = scraper.get_details()
-                        cloudamqp_sender_client.publish(details, durable=True)
+                        if details is not None:
+                            cloudamqp_sender_client.publish(details, durable=True)
                     except (SystemExit, KeyboardInterrupt):
                         raise
                     except Exception as e:
