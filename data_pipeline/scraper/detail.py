@@ -7,7 +7,6 @@ import re
 import pprint
 
 from bs4.element import Tag
-from dateutil import parser
 from six.moves import range
 
 from base import BaseScraper
@@ -26,22 +25,23 @@ class DetailScraper(BaseScraper):
         self.region = region
         self.category = category
 
-    def __parse_price(self, price_ele):
-        """parse price element --> int"""
+    # TODO: save these parsers for future use
+    # def __parse_price(self, price_ele):
+    #     """parse price element --> int"""
 
-        if price_ele:
-            inner_html = price_ele.text.strip()
-            self.logger.debug("price_ele: inner_html=%s", inner_html)
-            try:
-                for i in range(len(inner_html)):
-                    if inner_html[i].isdigit():
-                        number = inner_html[i:]
-                        return int(number) if number.isdigit() else int(float(number))
-            except ValueError:
-                pass
-        msg = "Unable to parse a useful price"
-        self.logger.warning(msg)
-        raise ValueError(msg)
+    #     if price_ele:
+    #         inner_html = price_ele.text.strip()
+    #         self.logger.debug("price_ele: inner_html=%s", inner_html)
+    #         try:
+    #             for i in range(len(inner_html)):
+    #                 if inner_html[i].isdigit():
+    #                     number = inner_html[i:]
+    #                     return int(number) if number.isdigit() else int(float(number))
+    #         except ValueError:
+    #             pass
+    #     msg = "Unable to parse a useful price"
+    #     self.logger.warning(msg)
+    #     raise ValueError(msg)
 
     def __parse_id(self, text):
         """remove strs other than ID"""
@@ -57,71 +57,82 @@ class DetailScraper(BaseScraper):
         soup = self._get_soup(url=self.url, logger=self.logger)
 
         price_ele = soup.find("span", {"class": "price"})
-        try:
-            price = self.__parse_price(price_ele)
-        except ValueError:
-            return None
+        price = price_ele.text.strip() if price_ele and price_ele.text else ""
 
         title_ele = soup.find("span", {"id": "titletextonly"})
-        title = title_ele.text if title_ele else ""
+        title = title_ele.text.strip() if title_ele and title_ele.text else ""
 
         geo_ele = soup.find("div", {"id": "map"})
-        geo = {"latitude": geo_ele.attrs.get("data-latitude"),
-               "longitude": geo_ele.attrs.get("data-longitude")} if geo_ele else {}
+        geo = {}
+        if geo_ele and geo_ele.attrs.get("data-latitude") and geo_ele.attrs.get("data-longitude"):
+            lat = geo_ele.attrs.get("data-latitude").strip()
+            lon = geo_ele.attrs.get("data-longitude").strip()
+            if lat != "" and lon != "":
+                geo = {"latitude": lat, "longitude": lon}
 
         info_eles = soup.find("div", {"class": "postinginfos"})
         craigslist_id = self.__parse_id(unicode(info_eles.find(string=re.compile(".*post id:.*"))))
-        post_datetime = None
-        update_datetime = None
+        post_datetime = ""
+        update_datetime = ""
         for info_ele in info_eles:
             if isinstance(info_ele, Tag):
-                for text in info_ele.stripped_strings:
-                    if text.find("posted") != -1:
-                        try:
-                            post_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                        except (ValueError, OverflowError):
-                            self.logger.warning("Unable to parse post datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                        break
-                    elif text.find("updated") != -1:
-                        try:
-                            update_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                        except (ValueError, OverflowError):
-                            self.logger.warning("Unable to parse update datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                        break
+                time_ele = info_ele.find("time", {"class": "date"})
+                if time_ele:
+                    for text in info_ele.stripped_strings:
+                        if text.find("posted") != -1:
+                            # TODO: use this parsing logic in the future
+                            # try:
+                            #     post_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
+                            # except (ValueError, OverflowError):
+                            #     self.logger.warning("Unable to parse post datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
+                            if time_ele.attrs.get("datetime"):
+                                post_datetime = time_ele.attrs.get("datetime").strip()
+                            break
+                        elif text.find("updated") != -1:
+                            # TODO: use this parsing logic in the future
+                            # try:
+                            #     update_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
+                            # except (ValueError, OverflowError):
+                            #     self.logger.warning("Unable to parse update datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
+                            if time_ele.attrs.get("datetime"):
+                                update_datetime = time_ele.attrs.get("datetime").strip()
+                            break
 
         city_ele = soup.find("span", {"class": "postingtitletext"})
         city = ""
         if city_ele:
             small_ele = city_ele.find("small")
-            if small_ele:
-                city = small_ele.text
+            if small_ele and small_ele.text:
+                city = small_ele.text.strip()
 
         street_ele = soup.find("div", {"class": "mapbox"})
         street = ""
         if street_ele:
             addr_ele = street_ele.find("div", {"class": "mapaddress"})
-            if addr_ele:
-                street = addr_ele.text
+            if addr_ele and addr_ele.text:
+                street = addr_ele.text.strip()
 
         gallery_ele = soup.find("div", {"class": "gallery"})
         img_url = ""
         if gallery_ele:
             img_ele = gallery_ele.find("img")
-            if img_ele:
-                img_url = img_ele.attrs.get("src")
+            if img_ele and img_ele.attrs.get("src"):
+                img_url = img_ele.attrs.get("src").strip()
 
         bubble_eles = soup.find_all("span", {"class": "shared-line-bubble"})
         bed = ""
         bath = ""
         size = ""
-        available_date = None
+        available_date = ""
         for bubble_ele in bubble_eles:
             if isinstance(bubble_ele, Tag):
-                if bubble_ele.attrs.get("data-date") is not None:
-                    try:
-                        available_date = parser.parse(bubble_ele.attrs.get("data-date"))
-                    except (ValueError, OverflowError):
-                        self.logger.warning("Unable to parse available date=%s", bubble_ele.attrs.get("data-date"))
+                if bubble_ele.attrs.get("data-date"):
+                    # TODO: save this parsing logic for future use
+                    # try:
+                    #     available_date = parser.parse(bubble_ele.attrs.get("data-date"))
+                    # except (ValueError, OverflowError):
+                    #     self.logger.warning("Unable to parse available date=%s", bubble_ele.attrs.get("data-date"))
+                    available_date = bubble_ele.attrs.get("data-date").strip()
                 else:
                     for text in bubble_ele.stripped_strings:
                         if text == "/":
@@ -152,7 +163,10 @@ class DetailScraper(BaseScraper):
         body_ele = soup.find("section", {"id": "postingbody"})
         body = [line for line in body_ele.stripped_strings]
 
-        result = {"price": price,
+        result = {"region": self.region,
+                  "category": self.category,
+                  "url": self.url,
+                  "price": price,
                   "title": title,
                   "geo": geo,
                   "craigslist_id": craigslist_id,
@@ -160,9 +174,6 @@ class DetailScraper(BaseScraper):
                   "update_datetime": update_datetime,
                   "city": city,
                   "street": street,
-                  "region": self.region,
-                  "category": self.category,
-                  "url": self.url,
                   "img_url": img_url,
                   "bed": bed,
                   "bath": bath,
