@@ -104,7 +104,7 @@ def monitor(workers=8):
                     redis_client.expire(listing["url"], LISTING_TIME_OUT_IN_SECONDS)
 
                     cloudamqp_client.publish({"url": listing["url"], "region": listing["region"],
-                                              "category": listing["category"]})
+                                              "category": listing["category"]}, durable=True)
 
             if total_so_far - task["start"] >= RESULTS_PER_REQUEST:
                 task["start"] = total_so_far
@@ -144,7 +144,7 @@ def monitor(workers=8):
             client.close()
         logger.info("CloudAMQP connections are all closed")
 
-        logger.info("%s Sleeping... Next execution: %s",
+        logger.info("%s Listing Monitor goes sleeping... Next execution: %s",
                     datetime.datetime.now(),
                     datetime.datetime.now() +
                     datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME_IN_SECONDS))
