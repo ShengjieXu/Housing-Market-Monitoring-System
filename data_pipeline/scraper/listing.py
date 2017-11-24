@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""A class for monitoring the search page of housing listings"""
+"""A class for scraping the search page of housing listings"""
 
 import json
 import logging
@@ -22,7 +22,7 @@ ALL_REGIONS = REGION_SCRAPER.get_all_regions()
 
 
 class ListingScraper(BaseScraper):
-    """A class for monitoring the search page of housing listings"""
+    """A class for scraping the search page of housing listings"""
 
     url_templates = "https://%(region)s.craigslist.org/search/%(category)s"
 
@@ -42,7 +42,7 @@ class ListingScraper(BaseScraper):
                                          "category": self.category}
 
     def get_listings(self, limit=None, start=0):
-        """scrape the given listing page"""
+        """Get all listing-urls from the given listing page"""
 
         total_so_far = start
         results_yielded = 0
@@ -65,7 +65,8 @@ class ListingScraper(BaseScraper):
 
             results_yielded += 1
             total_so_far += 1
-            listing = {"url": url, "total_so_far": total_so_far}
+            listing = {"url": url, "total_so_far": total_so_far,
+                       "region": self.region, "category": self.category}
 
             self.logger.debug("Yielding listing=%s", listing)
             yield listing

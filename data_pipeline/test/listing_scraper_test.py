@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scraper"))
 from listing import ListingScraper
 
 
-class ClListingScraperTestCase(unittest.TestCase):
+class ListingScraperTestCase(unittest.TestCase):
     def test_get_listings(self):
         logger = logging.getLogger(__name__)
         scraper = ListingScraper('sfbay', 'apa')
