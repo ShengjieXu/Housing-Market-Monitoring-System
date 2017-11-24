@@ -9,7 +9,7 @@ import pika
 class CloudAMQPClient(object):
     """CloudAMQP client class"""
 
-    def __init__(self, queue_url, queue_name, durable=False):
+    def __init__(self, queue_url, queue_name, durable=True):
         self.logger = logging.getLogger(__name__)
         self.queue_url = queue_url
         self.queue_name = queue_name
@@ -22,7 +22,7 @@ class CloudAMQPClient(object):
         self.logger.debug("CloudAMQP: queue_name=%s, queue_url=%s initialized",
                           queue_name, queue_url)
 
-    def publish(self, message, durable=False):
+    def publish(self, message, durable=True):
         """publish message"""
         if durable:
             self.channel.basic_publish(
@@ -59,7 +59,7 @@ class CloudAMQPClient(object):
         self.connection.close()
 
 
-def clear_queue(queue_url, queue_name, durable=False):
+def clear_queue(queue_url, queue_name, durable=True):
     """clear the contents of the queue by sending get requests"""
     logger = logging.getLogger(__name__)
     client = CloudAMQPClient(queue_url, queue_name, durable)
