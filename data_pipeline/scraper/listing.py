@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import pprint
 try:
     from urlparse import urljoin  # PY2
 except ImportError:
@@ -68,5 +69,5 @@ class ListingScraper(BaseScraper):
             listing = {"url": url, "total_so_far": total_so_far,
                        "region": self.region, "category": self.category}
 
-            self.logger.debug("Yielding listing=%s", listing)
+            self.logger.debug("Yielding listing=%s", pprint.pformat(listing))
             yield listing
