@@ -73,8 +73,9 @@ def fetch(workers=8):
 
                 if task:
                     try:
-                        logger.info("Thread_%s working on (%s, %s, %s)", threading.current_thread().ident,
-                            task["url"], task["region"], task["category"])
+                        logger.info("Thread_%s working on (%s, %s, %s), active_threads_count=%s",
+                            threading.current_thread().ident, task["url"], task["region"], task["category"],
+                            threading.active_count())
                         scraper = DetailScraper(url=task["url"], region=task["region"], category=task["category"])
                         details = scraper.get_details()
                         if details is not None:
