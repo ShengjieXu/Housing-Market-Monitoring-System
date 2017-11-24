@@ -19,10 +19,10 @@ class RegionScraper(BaseScraper):
         regions = set()
         soup = self._get_soup(url=self.regions_url, logger=logging.getLogger(__name__))
 
-        for box in soup.findAll('div', {'class': 'box'}):
-            for a in box.findAll('a'):
+        for box in soup.findAll("div", {"class": "box"}):
+            for a in box.findAll("a"):
                 # Remove protocol and get subdomain
-                region = a.attrs['href'].rsplit('//', 1)[1].split('.')[0]
+                region = a.attrs["href"].rsplit("//", 1)[1].split(".")[0]
                 regions.add(region)
 
         return regions
