@@ -1,6 +1,7 @@
 beautifulsoup4
 pika
 pymongo
+python-dateutil
 python-jsonrpc
 redis
 requests
