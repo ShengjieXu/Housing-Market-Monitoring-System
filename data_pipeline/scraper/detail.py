@@ -25,24 +25,6 @@ class DetailScraper(BaseScraper):
         self.region = region
         self.category = category
 
-    # TODO: save these parsers for future use
-    # def __parse_price(self, price_ele):
-    #     """parse price element --> int"""
-
-    #     if price_ele:
-    #         inner_html = price_ele.text.strip()
-    #         self.logger.debug("price_ele: inner_html=%s", inner_html)
-    #         try:
-    #             for i in range(len(inner_html)):
-    #                 if inner_html[i].isdigit():
-    #                     number = inner_html[i:]
-    #                     return int(number) if number.isdigit() else int(float(number))
-    #         except ValueError:
-    #             pass
-    #     msg = "Unable to parse a useful price"
-    #     self.logger.warning(msg)
-    #     raise ValueError(msg)
-
     def __parse_id(self, text):
         """remove strs other than ID"""
 
@@ -80,20 +62,10 @@ class DetailScraper(BaseScraper):
                 if time_ele:
                     for text in info_ele.stripped_strings:
                         if text.find("posted") != -1:
-                            # TODO: use this parsing logic in the future
-                            # try:
-                            #     post_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                            # except (ValueError, OverflowError):
-                            #     self.logger.warning("Unable to parse post datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
                             if time_ele.attrs.get("datetime"):
                                 post_datetime = time_ele.attrs.get("datetime").strip()
                             break
                         elif text.find("updated") != -1:
-                            # TODO: use this parsing logic in the future
-                            # try:
-                            #     update_datetime = parser.parse(info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
-                            # except (ValueError, OverflowError):
-                            #     self.logger.warning("Unable to parse update datetime=%s", info_ele.find("time", {"class": "date"}).attrs.get("datetime"))
                             if time_ele.attrs.get("datetime"):
                                 update_datetime = time_ele.attrs.get("datetime").strip()
                             break
@@ -127,11 +99,6 @@ class DetailScraper(BaseScraper):
         for bubble_ele in bubble_eles:
             if isinstance(bubble_ele, Tag):
                 if bubble_ele.attrs.get("data-date"):
-                    # TODO: save this parsing logic for future use
-                    # try:
-                    #     available_date = parser.parse(bubble_ele.attrs.get("data-date"))
-                    # except (ValueError, OverflowError):
-                    #     self.logger.warning("Unable to parse available date=%s", bubble_ele.attrs.get("data-date"))
                     available_date = bubble_ele.attrs.get("data-date").strip()
                 else:
                     for text in bubble_ele.stripped_strings:
