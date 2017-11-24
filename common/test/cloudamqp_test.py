@@ -22,7 +22,7 @@ class CloudAMQPClientTestCase(unittest.TestCase):
         client = CloudAMQPClient(QUEUE_URL, QUEUE_NAME, durable=True)
 
         message = {"name": "test", "value": "123"}
-        client.publish(message)
+        client.publish(message, durable=True)
         received_message = client.get()
 
         self.assertEqual(received_message, message)
