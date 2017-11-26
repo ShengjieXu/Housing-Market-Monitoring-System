@@ -39,13 +39,13 @@ class CloudAMQPClient(object):
                 body=json.dumps(message))
         self.logger.info(" [x] Sent %s to %s", message, self.queue_name)
 
-    def get(self):
+    def get(self, as_str=False):
         """get message"""
         method_frame, _, body = self.channel.basic_get(self.queue_name)
         if method_frame:
             self.logger.info(" [x] Received message from %s: %s", self.queue_name, body)
             self.channel.basic_ack(method_frame.delivery_tag)
-            return json.loads(body)
+            return body if as_str else json.loads(body)
         self.logger.info("No message returned from %s", self.queue_name)
         return None
 
