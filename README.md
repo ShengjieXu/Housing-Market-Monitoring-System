@@ -18,22 +18,24 @@ This system monitors the housing market in real time and provides visualizations
     sudo apt-get install -y nodejs build-essential
     ```
 
+* [Fix npm permissions](https://docs.npmjs.com/getting-started/fixing-npm-permissions)
+
 * Nodemon
 
     ```sh
-    sudo npm install -g nodemon
+    npm install -g nodemon
     ```
 
 * Express Generator
 
     ```sh
-    sudo npm install -g express-generator
+    npm install -g express-generator
     ```
 
 * Angular/Cli
 
     ```sh
-    sudo npm install -g @angular/cli
+    npm install -g @angular/cli
     ```
 
 ## Backend Servers
