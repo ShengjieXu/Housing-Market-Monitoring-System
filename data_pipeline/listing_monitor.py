@@ -50,6 +50,73 @@ LOG_FILE_NAME = "listing_monitor.log"
 SEEDS = CONFIG["craigslist"]["seeds"]
 
 
+def _scrape_listings(run_event, queue, scrapers, redis_client):
+    """
+    Worker task: scrape listings from the seed got from the thread task queue
+    Each worker thread has its own cloudamqp_client, newly constructed or got
+    from cloudamqp_clients
+    """
+
+    logger = logging.getLogger(__name__)
+    cloudamqp_client = None
+
+    while run_event.is_set():
+        if cloudamqp_client:
+            task = queue.get(block=True)
+
+            scraper = scrapers.get(task["region"])  # getSet scraper
+            if scraper is None:
+                scraper = ListingScraper(task["region"], task["category"])
+                scrapers[task["region"]] = scraper
+
+            num_of_listings_sent = 0
+            total_so_far = task["start"]
+            logger.info("Thread_%s working on (%s, %s, %s), active_threads=%s",
+                        threading.current_thread().ident,
+                        task["region"], task["category"], task["start"],
+                        threading.active_count())
+
+            for listing in scraper.get_listings(start=task["start"]):
+                total_so_far = max(total_so_far, listing["total_so_far"])
+
+                if redis_client.get(listing["url"]) is None:
+                    num_of_listings_sent += 1
+
+                    redis_client.set(listing["url"], listing["url"])
+                    redis_client.expire(listing["url"], LISTING_TIME_OUT_IN_SECONDS)
+
+                    cloudamqp_client.publish({"url": listing["url"],
+                                              "region": listing["region"],
+                                              "category": listing["category"]}, durable=True)
+                else:
+                    logger.debug("Duplicate URL. Skipping...")
+
+            if total_so_far - task["start"] >= RESULTS_PER_REQUEST:
+                task["start"] = total_so_far
+                queue.put(task)
+                logger.info("Thread task queue: add new task: (%s, %s, %s)",
+                            task["region"], task["category"], task["start"])
+            else:
+                logger.info("Region=%s is done", task["region"])
+
+            queue.task_done()
+            logger.info("Region=%s, total_processed=%s, published=%s",
+                        task["region"], total_so_far, num_of_listings_sent)
+
+            cloudamqp_client.sleep(CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS)
+        else:
+            cloudamqp_client = CloudAMQPClient(SCRAPE_LISTINGS_TASK_QUEUE_URL,
+                                               SCRAPE_LISTINGS_TASK_QUEUE_NAME,
+                                               durable=True)
+            logger.info("Thread_%s, Scrape listings task queue connection established",
+                        threading.current_thread().ident)
+
+    if cloudamqp_client:
+        cloudamqp_client.close()
+    logger.info("Thread_%s, Scrape listings task queue connection closed",
+                threading.current_thread().ident)
+
+
 def monitor(workers=8):
     """
     Send searching queries to Craigslist,
@@ -65,96 +132,47 @@ def monitor(workers=8):
     logger = logging.getLogger(__name__)
 
     redis_client = redis.StrictRedis(REDIS_HOST, REDIS_PORT)
+
     scrapers = {}   # Map region to its scraper
 
-    def scrape_listings():
-        """
-        Worker task: scrape listings from the seed got from the thread task queue
-        Each worker thread has its own cloudamqp_client, newly constructed or got
-        from cloudamqp_clients
-        """
+    run_event = threading.Event()
 
-        cloudamqp_client = cloudamqp_clients.get(threading.current_thread().ident)
-        if cloudamqp_client is None:
-            cloudamqp_client = CloudAMQPClient(SCRAPE_LISTINGS_TASK_QUEUE_URL,
-                                               SCRAPE_LISTINGS_TASK_QUEUE_NAME,
-                                               durable=True)
-            cloudamqp_clients[threading.current_thread().ident] = cloudamqp_client
+    try:
+        while True:
+            queue = Queue() # Init thread tasks queue
+            for region, category in iteritems(SEEDS):
+                queue.put({"region": region, "category": category, "start": 0})
+                logger.info("Thread task queue: initial add: (%s, %s, %s)", region, category, 0)
 
-        while not queue.empty():
-            task = queue.get(block=True)
+            run_event.set()
+            threads = []
+            for _ in range(workers):
+                thread = threading.Thread(target=_scrape_listings, args=(run_event,
+                                                                         queue,
+                                                                         scrapers,
+                                                                         redis_client))
+                thread.start()
+                threads.append(thread)
 
-            scraper = scrapers.get(task["region"])  # getSet scraper
-            if scraper is None:
-                scraper = ListingScraper(task["region"], task["category"])
-                scrapers[task["region"]] = scraper
+            # TODO: SIGINT to skip the wait
+            queue.join()    # Block until all tasks in the queue are completed
+            logger.info("Queue terminated")
+            run_event.clear()
 
-            num_of_listings_sent = 0
-            total_so_far = task["start"]
-            logger.info("Thread_%s working on (%s, %s, %s)", threading.current_thread().ident,
-                        task["region"], task["category"], task["start"])
+            for thread in threads:
+                thread.join()
+            logger.info("Threads terminated")
 
-            for listing in scraper.get_listings(start=task["start"]):
-                total_so_far = max(total_so_far, listing["total_so_far"])
-
-                if redis_client.get(listing["url"]) is None:
-                    num_of_listings_sent += 1
-
-                    redis_client.set(listing["url"], listing["url"])
-                    redis_client.expire(listing["url"], LISTING_TIME_OUT_IN_SECONDS)
-
-                    cloudamqp_client.publish({"url": listing["url"], "region": listing["region"],
-                                              "category": listing["category"]}, durable=True)
-
-            if total_so_far - task["start"] >= RESULTS_PER_REQUEST:
-                task["start"] = total_so_far
-                queue.put(task)
-                logger.info("Thread task queue: add new task: (%s, %s, %s)",
-                            task["region"], task["category"], task["start"])
-
-            queue.task_done()
-            logger.info(" [x] Region=%s, total_processed=%s, published=%s, active_threads=%s",
-                        task["region"], total_so_far,
-                        num_of_listings_sent, threading.active_count())
-
-            cloudamqp_client.sleep(CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS)
-
-    while True:
-        cloudamqp_clients = {}  # Map thread identification to its cloudamqp_client
-
-        queue = Queue() # Init thread tasks queue
-        for region, category in iteritems(SEEDS):
-            queue.put({"region": region, "category": category, "start": 0})
-            logger.info("Thread task queue: initial add: (%s, %s, %s)", region, category, 0)
-
-        threads = []
-        for _ in range(workers):
-            thread = threading.Thread(target=scrape_listings)
-            thread.start()
-            threads.append(thread)
-
-        queue.join()    # Block until all tasks in the queue are completed
-        logger.info("Queue terminated")
-
-        for thread in threads:
-            thread.join()
-        logger.info("Threads terminated")
-
-        for _, client in iteritems(cloudamqp_clients):
-            client.close()
-        logger.info("CloudAMQP connections are all closed")
-
-        logger.info("%s Listing Monitor goes sleeping... Next execution: %s",
-                    datetime.datetime.now(),
-                    datetime.datetime.now() +
-                    datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME_IN_SECONDS))
-        time.sleep(MONITOR_SLEEP_TIME_IN_SECONDS)
-
+            logger.info("%s Listing Monitor goes sleeping... Next execution: %s",
+                        datetime.datetime.now(),
+                        datetime.datetime.now() +
+                        datetime.timedelta(days=0, seconds=MONITOR_SLEEP_TIME_IN_SECONDS))
+            time.sleep(MONITOR_SLEEP_TIME_IN_SECONDS)
+    except (SystemExit, KeyboardInterrupt):
+        logger.info("Attemped exit. Terminating %s threads...", threading.active_count())
+        run_event.clear()
 
 if __name__ == "__main__":
-    set_default_dual_logger(LOG_FILE_NAME, "a")
+    set_default_dual_logger(LOG_FILE_NAME)
+    logging.getLogger("pika").setLevel(logging.WARNING)
     monitor(workers=NUM_OF_WORKER_THREADS)
-
-    # # helper to clear the scrape task queue
-    # from cloudamqp import clear_queue
-    # clear_queue(SCRAPE_LISTINGS_TASK_QUEUE_URL, SCRAPE_LISTINGS_TASK_QUEUE_NAME)
