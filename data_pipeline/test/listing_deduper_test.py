@@ -32,5 +32,5 @@ class HandleTaskTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    set_default_dual_logger("listing_deduper_test.log", "a")
+    set_default_dual_logger("listing_deduper_test.log")
     unittest.main()
