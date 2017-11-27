@@ -33,7 +33,7 @@ REDIS_HOST = CONFIG["redis"]["host"]
 REDIS_PORT = CONFIG["redis"]["port"]
 
 MONITOR_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["monitor"]["sleep_time_in_seconds"]
-CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["cloudamqp"]["client"]["sleep_time_in_seconds"]
+CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["monitor"]["interval_in_seconds"]
 LISTING_TIME_OUT_IN_SECONDS = CONFIG["listing"]["time_out_in_seconds"]
 
 SCRAPE_LISTINGS_TASK_QUEUE_URL = CONFIG["cloudamqp"]["scrape_listings_task_queue"]["url"]

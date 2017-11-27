@@ -32,7 +32,7 @@ DEDUPE_LISTINGS_TASK_QUEUE_URL = CONFIG["cloudamqp"]["dedupe_listings_task_queue
 DEDUPE_LISTINGS_TASK_QUEUE_NAME = CONFIG["cloudamqp"]["dedupe_listings_task_queue"]["name"]
 
 FETCHER_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["fetcher"]["sleep_time_in_seconds"]
-CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["cloudamqp"]["client"]["sleep_time_in_seconds"]
+CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["fetcher"]["interval_in_seconds"]
 
 NUM_OF_WORKER_THREADS = CONFIG["listing"]["fetcher"]["num_of_worker_threads"]
 

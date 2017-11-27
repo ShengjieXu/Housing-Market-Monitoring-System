@@ -23,7 +23,7 @@ with open(CONFIG_FILE) as json_config_file:
 DEDUPE_LISTINGS_TASK_QUEUE_URL = CONFIG["cloudamqp"]["dedupe_listings_task_queue"]["url"]
 DEDUPE_LISTINGS_TASK_QUEUE_NAME = CONFIG["cloudamqp"]["dedupe_listings_task_queue"]["name"]
 
-CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["deduper"]["sleep_time_in_seconds"]
+CLOUDAMQP_CLIENT_SLEEP_TIME_IN_SECONDS = CONFIG["listing"]["deduper"]["interval_in_seconds"]
 
 MONGODB_URI = CONFIG["mongodb"]["uri"]
 
