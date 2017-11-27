@@ -99,8 +99,8 @@ def _handle_task(task):
             old_available_date = parser.parse(existing["available_date"])
             if (new_available_date - old_available_date).days <= LISTING_TTL_IN_DAYS:
                 logger.debug("Skipping duplicate... %s<=TTL: existing=%s, incoming=%s",
-                            (new_available_date - old_available_date).days,
-                            existing, listing)
+                             (new_available_date - old_available_date).days,
+                             existing, listing)
                 return
         db[table_name].insert_one(listing)
         logger.debug("Inserting, table_name=%s, listing=%s", table_name, listing)
@@ -137,5 +137,6 @@ def dedupe():
 
 
 if __name__ == "__main__":
-    set_default_dual_logger(LOG_FILE_NAME, "a")
+    set_default_dual_logger(LOG_FILE_NAME)
+    logging.getLogger("pika").setLevel(logging.WARNING)
     dedupe()
