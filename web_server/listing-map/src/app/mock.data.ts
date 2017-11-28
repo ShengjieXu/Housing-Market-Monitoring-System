@@ -15,8 +15,8 @@ export const STATISTICS: Statistic[] = [{
   of: {
     name: 'sfbay',
     geo: {
-      lat: 37.876,
-      lnt: -123.542
+      lat: 37.536,
+      lnt: -122.183
     },
     radius: 150000
   },

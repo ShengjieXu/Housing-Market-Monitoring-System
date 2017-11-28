@@ -22,9 +22,13 @@ export class MapComponent implements OnInit {
   };
 
   map: any;
-  intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
+  legend: any;
+  info: any;
   circles = [];
 
+  intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
+
+  statsType = 'Average';
   statistics: Statistic[] = [];
 
   constructor() { }
@@ -79,7 +83,9 @@ export class MapComponent implements OnInit {
         fillOpacity: fillOpacity,
         radius: radius
       }).addTo(this.map);
+      circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount);
 
+      this.statsType = type;
       this.circles.push(circle);
     });
   }
@@ -94,6 +100,26 @@ export class MapComponent implements OnInit {
            d > 500   ? '#FED976' :
                        '#FFEDA0';
   }
+
+  // // TODO: add info ctrl
+  // initInfoCtrl(): void {
+  //   const info = L.control({position: 'topleft'});
+  //   const mapClass = this;
+
+  //   info.onAdd = function(map) {
+  //       this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+  //       this.update();
+  //       return this._div;
+  //   };
+
+  //   // method that we will use to update the control based on feature properties passed
+  //   info.update = function (props) {
+  //       this._div.innerHTML = '<h4>' + mapClass.statsType + ' Housing Price</h4>' +  (props ?
+  //           '<b>' + props.name + '</b><br />$' + props.amount : 'Hover over a region');
+  //   };
+
+  //   this.info = info.addTo(this.map);
+  // }
 
   initLegend(): void {
     const legend = L.control({position: 'topleft'});
@@ -112,7 +138,7 @@ export class MapComponent implements OnInit {
       return div;
     };
 
-    legend.addTo(this.map);
+    this.legend = legend.addTo(this.map);
   }
 
 }
