@@ -20,10 +20,9 @@ export class MapComponent implements OnInit {
     },
     zoomLevel: 4
   };
-  intervals: number[] = [1000, 1500, 2000, 2500, 3000, 3500];
-  colors: string[] = ['#21313E', '#225760', '#258077', '#49AA80', '#87D27C', '#D7F574', '#D7F574'];
 
   map: any;
+  intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
   circles = [];
 
   statistics: Statistic[] = [];
@@ -39,11 +38,13 @@ export class MapComponent implements OnInit {
     const lat = this.defaultView['geo']['lat'];
     const lnt = this.defaultView['geo']['lnt'];
     const zoomLevel = this.defaultView['zoomLevel'];
+
     this.map = L.map('map').setView([lat, lnt], zoomLevel);
   }
 
   loadMap(): void {
     this.resetMap();
+
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,' +
                      ' <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
@@ -52,6 +53,8 @@ export class MapComponent implements OnInit {
         id: 'mapbox.streets',
         accessToken: 'pk.eyJ1IjoibGVtb25teXRoIiwiYSI6ImNqYWl0NXZ1bTIxb2czM3BsMzBjbGRlZDYifQ.ZXxe85ZoxDGMKhsGoGCjGg'
     }).addTo(this.map);
+
+    this.initLegend();
   }
 
   loadStats(): void {
@@ -67,28 +70,49 @@ export class MapComponent implements OnInit {
       const type = stat['type'];
       const amount = stat['amount'];
 
-      const circle = L.circle([lat, lnt], radius).addTo(this.map);
+      const color = this.getColor(amount);
+      const fillOpacity = 0.7;
 
-      this.circles.push(this.setCircleStyle(circle, amount));
+      const circle = L.circle([lat, lnt], {
+        color: color,
+        fillColor: color,
+        fillOpacity: fillOpacity,
+        radius: radius
+      }).addTo(this.map);
+
+      this.circles.push(circle);
     });
   }
 
-  setCircleStyle(circle: any, amount: number): any {
-    let i = 0;
-    for (; i < this.intervals.length; i++) {
-      if (amount <= this.intervals[i]) {
-        return circle.setStyle({
-          color: this.colors[i],
-          fillColor: this.colors[i],
-          fillOpacity: 0.5
-        });
+  getColor(d: number): string {
+    return d > 3500  ? '#800026' :
+           d > 3000  ? '#BD0026' :
+           d > 2500  ? '#E31A1C' :
+           d > 2000  ? '#FC4E2A' :
+           d > 1500  ? '#FD8D3C' :
+           d > 1000  ? '#FEB24C' :
+           d > 500   ? '#FED976' :
+                       '#FFEDA0';
+  }
+
+  initLegend(): void {
+    const legend = L.control({position: 'topleft'});
+
+    legend.onAdd = map => {
+
+      const div = L.DomUtil.create('div', 'info legend');
+
+      // loop through our density intervals and generate a label with a colored square for each interval
+      for (let i = 0; i < this.intervals.length; i++) {
+        div.innerHTML +=
+          '<i style="background:' + this.getColor(this.intervals[i] + 1) + '"></i> ' +
+          this.intervals[i] + (this.intervals[i + 1] ? '&ndash;' + this.intervals[i + 1] + '<br>' : '+');
       }
-    }
-    return circle.setStyle({
-      color: this.colors[i],
-      fillColor: this.colors[i],
-      fillOpacity: 0.5
-    });
+
+      return div;
+    };
+
+    legend.addTo(this.map);
   }
 
 }
