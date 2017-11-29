@@ -61,11 +61,16 @@ export class MapComponent implements OnInit {
   }
 
   loadStats(): void {
-    // TODO: cleaning existing circles
-
     this.ds.getStatistics()
-      .subscribe(statistics => this.statistics = statistics);
+      .subscribe(statistics => {
+        this.statistics = statistics;
+        this.visualize();
+        console.log(statistics);
+      });
+  }
 
+  visualize(): void {
+    // TODO: cleaning existing circles
     this.statistics.forEach(stat => {
       const name = stat['of']['name'];
       const lat = stat['of']['geo']['lat'];
@@ -101,26 +106,6 @@ export class MapComponent implements OnInit {
            d > 500   ? '#FED976' :
                        '#FFEDA0';
   }
-
-  // // TODO: add info ctrl
-  // initInfoCtrl(): void {
-  //   const info = L.control({position: 'topleft'});
-  //   const mapClass = this;
-
-  //   info.onAdd = function(map) {
-  //       this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-  //       this.update();
-  //       return this._div;
-  //   };
-
-  //   // method that we will use to update the control based on feature properties passed
-  //   info.update = function (props) {
-  //       this._div.innerHTML = '<h4>' + mapClass.statsType + ' Housing Price</h4>' +  (props ?
-  //           '<b>' + props.name + '</b><br />$' + props.amount : 'Hover over a region');
-  //   };
-
-  //   this.info = info.addTo(this.map);
-  // }
 
   initLegend(): void {
     const legend = L.control({position: 'topleft'});
