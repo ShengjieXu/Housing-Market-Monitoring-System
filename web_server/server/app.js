@@ -1,9 +1,6 @@
 var express = require('express');
 var path = require('path');
 
-var config = require('./config/config.json');
-var _ = require('./models/main.js').connect(config.mongoDbUri);
-
 var indexRouter = require('./routes/index');
 var restRouter = require('./routes/rest')
 
