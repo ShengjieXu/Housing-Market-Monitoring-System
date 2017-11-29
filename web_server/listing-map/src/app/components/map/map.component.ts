@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 import { Statistic } from '../../models/data.model';
-import { STATISTICS } from '../../mock.data';
-import { element } from 'protractor';
+import { DataService } from '../../services/data.service';
 
 declare const L: any;
 
@@ -31,7 +30,7 @@ export class MapComponent implements OnInit {
   statsType = 'Average';
   statistics: Statistic[] = [];
 
-  constructor() { }
+  constructor(private ds: DataService) { }
 
   ngOnInit() {
     this.loadMap();
@@ -62,8 +61,10 @@ export class MapComponent implements OnInit {
   }
 
   loadStats(): void {
-    // TODO: make async
-    this.statistics = STATISTICS;
+    // TODO: cleaning existing circles
+
+    this.ds.getStatistics()
+      .subscribe(statistics => this.statistics = statistics);
 
     this.statistics.forEach(stat => {
       const name = stat['of']['name'];
