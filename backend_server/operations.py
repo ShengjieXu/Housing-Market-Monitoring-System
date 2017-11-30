@@ -21,11 +21,10 @@ with open(CONFIG_FILE) as json_config_file:
 REDIS_HOST = CONFIG["redis"]["host"]
 REDIS_PORT = CONFIG["redis"]["port"]
 
-# TODO: add this to config
-LISTING_LIMIT = 3000
-AVERAGE_PRICES_TIME_OUT_IN_SECONDS = 3600 * 3
-MIN_PRICE_THRESHOLD = 300
-MAX_PRICE_THRESHOLD = 10000
+LISTING_LIMIT = CONFIG["stats"]["average_price"]["listing_limit"]
+AVERAGE_PRICES_TIME_OUT_IN_SECONDS = CONFIG["stats"]["average_price"]["time_out_in_seconds"]
+MIN_PRICE_THRESHOLD = CONFIG["stats"]["average_price"]["min_price_threshold"]
+MAX_PRICE_THRESHOLD = CONFIG["stats"]["average_price"]["max_price_threshold"]
 
 LISTING_TABLE_NAMES = [key for key in CONFIG["craigslist"]["seeds"]]
 
