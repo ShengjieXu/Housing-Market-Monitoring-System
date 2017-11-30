@@ -106,7 +106,7 @@ export class MapComponent implements OnInit {
           fillOpacity: fillOpacity,
           radius: radius
         }).addTo(this.map);
-        circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount);
+        circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount.toFixed(0));
 
         this.statsType = type;
         this.circles.push(circle);
