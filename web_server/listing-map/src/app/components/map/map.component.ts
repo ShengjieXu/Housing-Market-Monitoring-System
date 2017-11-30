@@ -21,10 +21,12 @@ export class MapComponent implements OnInit {
   };
 
   map: any;
+  resetBtn: any;
   legend: any;
   info: any;
   regions: any;
   circles = [];
+  fillOpacity = 0.7;
 
   intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
 
@@ -43,7 +45,17 @@ export class MapComponent implements OnInit {
     const lnt = this.defaultView['geo']['lnt'];
     const zoomLevel = this.defaultView['zoomLevel'];
 
-    this.map = L.map('map').setView([lat, lnt], zoomLevel);
+    if (this.map != null) {
+      this.map.setView([lat, lnt], zoomLevel);
+    } else {
+      this.map = L.map('map').setView([lat, lnt], zoomLevel);
+    }
+  }
+
+  refillCircles(): void {
+    this.circles.forEach(circle => {
+      circle.setStyle({fillOpacity: this.fillOpacity});
+    });
   }
 
   loadMap(): void {
@@ -58,12 +70,16 @@ export class MapComponent implements OnInit {
         accessToken: 'pk.eyJ1IjoibGVtb25teXRoIiwiYSI6ImNqYWl0NXZ1bTIxb2czM3BsMzBjbGRlZDYifQ.ZXxe85ZoxDGMKhsGoGCjGg'
     }).addTo(this.map);
 
-    const loadingControl = L.Control.loading({
-      separate: true
-    });
-    this.map.addControl(loadingControl);
-
+    this.initResetBtn();
     this.initLegend();
+    this.initLoadingCtrl();
+  }
+
+  initResetBtn(): void {
+    L.easyButton('<span class="star">&starf;</span>', (btn, map) => {
+      this.resetMap();
+      this.refillCircles();
+    }).addTo(this.map);
   }
 
   initLegend(): void {
@@ -86,6 +102,13 @@ export class MapComponent implements OnInit {
     this.legend = legend.addTo(this.map);
   }
 
+  initLoadingCtrl(): void {
+    const loadingControl = L.Control.loading({
+      separate: true
+    });
+    this.map.addControl(loadingControl);
+  }
+
   loadRegions(): void {
     this.ds.getRegions()
       .subscribe(regions => {
@@ -106,6 +129,8 @@ export class MapComponent implements OnInit {
   }
 
   visualize(): void {
+    const mapClass = this;
+
     // remove existing circles
     this.circles.forEach(circle => {
       circle.remove();
@@ -128,18 +153,26 @@ export class MapComponent implements OnInit {
           const radius = this.regions[region]['radius'];
 
           const color = this.getColor(data);
-          const fillOpacity = 0.7;
 
           const circle = L.circle([lat, lnt], {
             color: color,
             fillColor: color,
-            fillOpacity: fillOpacity,
+            fillOpacity: mapClass.fillOpacity,
             radius: radius
           }).addTo(this.map);
-          circle.bindPopup('<b>' + region.toLocaleUpperCase() + '</b><br>' +
+          circle.bindTooltip('<b>' + region.toLocaleUpperCase() + '</b><br>' +
             type + ' $' + data.toFixed(0) + '<br>' +
-            'from recent ' + count.toFixed(0) + ' data'
+            'from recent ' + count.toFixed(0) + ' data', {
+              direction: 'top'
+            }
           );
+
+          circle.on('click', function(e) {
+            mapClass.map.setZoomAround([lat, lnt], 10);
+            // clear tooltip and fill
+            this.closeTooltip();
+            this.setStyle({fillOpacity: 0});
+          });
 
           this.circles.push(circle);
         }
