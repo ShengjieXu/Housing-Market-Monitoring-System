@@ -1,5 +1,5 @@
 export class Statistic {
-  of: Region;
+  of: string;
   type: string;
   amount: number;
 }

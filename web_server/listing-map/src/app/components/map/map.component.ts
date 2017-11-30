@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { Statistic } from '../../models/data.model';
 import { DataService } from '../../services/data.service';
 
+
+
 declare const L: any;
 
 @Component({
@@ -23,6 +25,7 @@ export class MapComponent implements OnInit {
   map: any;
   legend: any;
   info: any;
+  regions: any;
   circles = [];
 
   intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
@@ -34,6 +37,7 @@ export class MapComponent implements OnInit {
 
   ngOnInit() {
     this.loadMap();
+    this.loadRegions();
     this.loadStats();
   }
 
@@ -69,30 +73,40 @@ export class MapComponent implements OnInit {
       });
   }
 
+  loadRegions(): void {
+    this.ds.getRegions()
+      .subscribe(regions => {
+        this.regions = regions;
+      });
+  }
+
   visualize(): void {
     // TODO: cleaning existing circles
     this.statistics.forEach(stat => {
-      const name = stat['of']['name'];
-      const lat = stat['of']['geo']['lat'];
-      const lnt = stat['of']['geo']['lnt'];
-      const radius = stat['of']['radius'];
+      const name = stat['of'];
 
-      const type = stat['type'];
-      const amount = stat['amount'];
+      if (this.regions.hasOwnProperty(name)) {
+        const lat = this.regions[name]['geo']['lat'];
+        const lnt = this.regions[name]['geo']['lnt'];
+        const radius = this.regions[name]['radius'];
 
-      const color = this.getColor(amount);
-      const fillOpacity = 0.7;
+        const type = stat['type'];
+        const amount = stat['amount'];
 
-      const circle = L.circle([lat, lnt], {
-        color: color,
-        fillColor: color,
-        fillOpacity: fillOpacity,
-        radius: radius
-      }).addTo(this.map);
-      circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount);
+        const color = this.getColor(amount);
+        const fillOpacity = 0.7;
 
-      this.statsType = type;
-      this.circles.push(circle);
+        const circle = L.circle([lat, lnt], {
+          color: color,
+          fillColor: color,
+          fillOpacity: fillOpacity,
+          radius: radius
+        }).addTo(this.map);
+        circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount);
+
+        this.statsType = type;
+        this.circles.push(circle);
+      }
     });
   }
 

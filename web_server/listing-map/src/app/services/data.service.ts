@@ -25,6 +25,13 @@ export class DataService {
     );
   }
 
+  getRegions(): any {
+    return this.http.get<any>('assets/regions.json')
+    .pipe(
+      catchError(this.handleError('getRegions', []))
+    );
+  }
+
   /**
    * Handle Http operation that failed.
    * Let the app continue.
