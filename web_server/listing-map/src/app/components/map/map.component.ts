@@ -69,7 +69,6 @@ export class MapComponent implements OnInit {
       .subscribe(statistics => {
         this.statistics = statistics;
         this.visualize();
-        console.log(statistics);
       });
   }
 
@@ -81,7 +80,12 @@ export class MapComponent implements OnInit {
   }
 
   visualize(): void {
-    // TODO: cleaning existing circles
+    // remove existing circles
+    this.circles.forEach(circle => {
+      circle.remove();
+    });
+    this.circles = [];
+
     this.statistics.forEach(stat => {
       const name = stat['of'];
 
