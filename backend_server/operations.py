@@ -22,7 +22,7 @@ REDIS_HOST = CONFIG["redis"]["host"]
 REDIS_PORT = CONFIG["redis"]["port"]
 
 LISTING_LIMIT = CONFIG["stats"]["average_price"]["listing_limit"]
-AVERAGE_PRICES_TIME_OUT_IN_SECONDS = CONFIG["stats"]["average_price"]["time_out_in_seconds"]
+MARKET_STATS_TIME_OUT_IN_SECONDS = CONFIG["stats"]["average_price"]["time_out_in_seconds"]
 MIN_PRICE_THRESHOLD = CONFIG["stats"]["average_price"]["min_price_threshold"]
 MAX_PRICE_THRESHOLD = CONFIG["stats"]["average_price"]["max_price_threshold"]
 
@@ -47,30 +47,30 @@ def getAverageListingPrices():
     """get the average listing prices for all regions"""
 
     db = mongodb.get_db()
-    average_listing_prices = []
+    average_listing_prices = {
+        "type": "average",
+        "payloads": []
+    }
 
     for region in LISTING_TABLE_NAMES:
-        key = region + ":average"
+        key = "api/v1/markets/stats/average/" + region
 
         if REDIS_CLIENT.get(key) is not None:
-            current_average = pickle.loads(REDIS_CLIENT.get(key))
+            payload = pickle.loads(REDIS_CLIENT.get(key))
         else:
-            current_average = {"of": region, "type": "average"}
-            listings = list(db[region].find().sort(
-                [("available_date", -1)]).limit(LISTING_LIMIT))
+            payload = {"region": region, "count": 0, "data": 0}
 
-            prices = map(lambda x: __parse_price(x["price"]), listings)
+            listings = list(db[region].find().sort([("available_date", -1)]).limit(LISTING_LIMIT))
             prices = filter(lambda x: MIN_PRICE_THRESHOLD <= x <= MAX_PRICE_THRESHOLD,
-                            prices)
-            average = 0
+                            map(lambda x: __parse_price(x["price"]), listings))
+
             if prices and len(prices) > 0:
-                average = sum(prices) / float(len(prices))
+                payload["data"] = sum(prices) / float(len(prices))
+                payload["count"] = len(prices)
 
-            current_average["amount"] = average
+            REDIS_CLIENT.set(key, pickle.dumps(payload))
+            REDIS_CLIENT.expire(key, MARKET_STATS_TIME_OUT_IN_SECONDS)
 
-            REDIS_CLIENT.set(key, pickle.dumps(current_average))
-            REDIS_CLIENT.expire(key, AVERAGE_PRICES_TIME_OUT_IN_SECONDS)
-
-        average_listing_prices.append(current_average)
+        average_listing_prices["payloads"].append(payload)
 
     return json.loads(dumps(average_listing_prices))

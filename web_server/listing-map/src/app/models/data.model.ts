@@ -1,16 +1,10 @@
-export class Statistic {
-  of: string;
+export class Statistics {
   type: string;
-  amount: number;
+  payloads: Payload[];
 }
 
-export class Region {
-  name: string;
-  geo: Geo;
-  radius: number;
-}
-
-export class Geo {
-  lat: number;
-  lnt: number;
+export class Payload {
+  region: string;
+  count: number;
+  data: number;
 }

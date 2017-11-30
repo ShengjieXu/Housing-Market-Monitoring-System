@@ -1,9 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Statistic } from '../../models/data.model';
+import { Statistics } from '../../models/data.model';
 import { DataService } from '../../services/data.service';
-
-
 
 declare const L: any;
 
@@ -31,14 +29,13 @@ export class MapComponent implements OnInit {
   intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
 
   statsType = 'Average';
-  statistics: Statistic[] = [];
+  statistics: Statistics;
 
   constructor(private ds: DataService) { }
 
   ngOnInit() {
     this.loadMap();
     this.loadRegions();
-    this.loadStats();
   }
 
   resetMap(): void {
@@ -69,69 +66,6 @@ export class MapComponent implements OnInit {
     this.initLegend();
   }
 
-  loadStats(): void {
-    this.map.fire('dataloading');
-    this.ds.getStatistics()
-      .subscribe(statistics => {
-        this.statistics = statistics;
-        this.visualize();
-        this.map.fire('dataload');
-      });
-  }
-
-  loadRegions(): void {
-    this.ds.getRegions()
-      .subscribe(regions => {
-        this.regions = regions;
-      });
-  }
-
-  visualize(): void {
-    // remove existing circles
-    this.circles.forEach(circle => {
-      circle.remove();
-    });
-    this.circles = [];
-
-    this.statistics.forEach(stat => {
-      const name = stat['of'];
-
-      if (this.regions.hasOwnProperty(name)) {
-        const lat = this.regions[name]['geo']['lat'];
-        const lnt = this.regions[name]['geo']['lnt'];
-        const radius = this.regions[name]['radius'];
-
-        const type = stat['type'];
-        const amount = stat['amount'];
-
-        const color = this.getColor(amount);
-        const fillOpacity = 0.7;
-
-        const circle = L.circle([lat, lnt], {
-          color: color,
-          fillColor: color,
-          fillOpacity: fillOpacity,
-          radius: radius
-        }).addTo(this.map);
-        circle.bindPopup('<b>' + name + '</b><br>' + type + ' $' + amount.toFixed(0));
-
-        this.statsType = type;
-        this.circles.push(circle);
-      }
-    });
-  }
-
-  getColor(d: number): string {
-    return d > 3500  ? '#800026' :
-           d > 3000  ? '#BD0026' :
-           d > 2500  ? '#E31A1C' :
-           d > 2000  ? '#FC4E2A' :
-           d > 1500  ? '#FD8D3C' :
-           d > 1000  ? '#FEB24C' :
-           d > 500   ? '#FED976' :
-                       '#FFEDA0';
-  }
-
   initLegend(): void {
     const legend = L.control({position: 'topleft'});
 
@@ -150,6 +84,78 @@ export class MapComponent implements OnInit {
     };
 
     this.legend = legend.addTo(this.map);
+  }
+
+  loadRegions(): void {
+    this.ds.getRegions()
+      .subscribe(regions => {
+        this.regions = regions;
+        // stats is dependent on regions, so load stats after regions are loaded
+        this.loadStats();
+      });
+  }
+
+  loadStats(): void {
+    this.map.fire('dataloading');
+    this.ds.getStatistics()
+      .subscribe(statistics => {
+        this.statistics = statistics;
+        this.visualize();
+        this.map.fire('dataload');
+      });
+  }
+
+  visualize(): void {
+    // remove existing circles
+    this.circles.forEach(circle => {
+      circle.remove();
+    });
+    this.circles = [];
+
+    const type = this.statistics['type'];
+    this.statsType = type;
+
+    // draw new circles
+    if (this.statistics != null && this.statistics['payloads'].length > 0) {
+      this.statistics['payloads'].forEach(payload => {
+        const region = payload['region'];
+        const count = payload['count'];
+        const data = payload['data'];
+
+        if (this.regions != null && this.regions.hasOwnProperty(region)) {
+          const lat = this.regions[region]['geo']['lat'];
+          const lnt = this.regions[region]['geo']['lnt'];
+          const radius = this.regions[region]['radius'];
+
+          const color = this.getColor(data);
+          const fillOpacity = 0.7;
+
+          const circle = L.circle([lat, lnt], {
+            color: color,
+            fillColor: color,
+            fillOpacity: fillOpacity,
+            radius: radius
+          }).addTo(this.map);
+          circle.bindPopup('<b>' + region.toLocaleUpperCase() + '</b><br>' +
+            type + ' $' + data.toFixed(0) + '<br>' +
+            'from recent ' + count.toFixed(0) + ' data'
+          );
+
+          this.circles.push(circle);
+        }
+      });
+    }
+  }
+
+  getColor(d: number): string {
+    return d > 3500  ? '#800026' :
+           d > 3000  ? '#BD0026' :
+           d > 2500  ? '#E31A1C' :
+           d > 2000  ? '#FC4E2A' :
+           d > 1500  ? '#FD8D3C' :
+           d > 1000  ? '#FEB24C' :
+           d > 500   ? '#FED976' :
+                       '#FFEDA0';
   }
 
 }

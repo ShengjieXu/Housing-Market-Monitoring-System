@@ -6,9 +6,11 @@ router.get('/markets/stats/:type', function(req, res, next) {
   var type = req.params['type'];
   console.log('markets/stats/' + type + ' get called');
 
-  rpc_client.getAverageListingPrices(function(response) {
-    res.json(response);
-  });
+  if (type != null && type.toLowerCase() === 'average') {
+    rpc_client.getAverageListingPrices(function(response) {
+      res.json(response);
+    });
+  }
 });
 
 module.exports = router;

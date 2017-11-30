@@ -5,7 +5,7 @@ import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { Statistic } from '../models/data.model';
+import { Statistics } from '../models/data.model';
 
 const httpOptions = {
   headers: new HttpHeaders({ 'Content-Type': 'application/json' })
@@ -14,14 +14,14 @@ const httpOptions = {
 @Injectable()
 export class DataService {
 
-  private statsAPI = 'api/v1/markets/stats/average';  // URL to web api
+  private statsAPI = 'api/v1/markets/stats/average';
 
   constructor(private http: HttpClient) { }
 
-  getStatistics(): Observable<Statistic[]> {
-    return this.http.get<Statistic[]>(this.statsAPI)
+  getStatistics(): Observable<Statistics> {
+    return this.http.get<Statistics>(this.statsAPI)
     .pipe(
-      catchError(this.handleError('getStatistics', []))
+      catchError(this.handleError('getStatistics', {type: 'average', payloads: []}))
     );
   }
 
