@@ -61,14 +61,21 @@ export class MapComponent implements OnInit {
         accessToken: 'pk.eyJ1IjoibGVtb25teXRoIiwiYSI6ImNqYWl0NXZ1bTIxb2czM3BsMzBjbGRlZDYifQ.ZXxe85ZoxDGMKhsGoGCjGg'
     }).addTo(this.map);
 
+    const loadingControl = L.Control.loading({
+      separate: true
+    });
+    this.map.addControl(loadingControl);
+
     this.initLegend();
   }
 
   loadStats(): void {
+    this.map.fire('dataloading');
     this.ds.getStatistics()
       .subscribe(statistics => {
         this.statistics = statistics;
         this.visualize();
+        this.map.fire('dataload');
       });
   }
 
