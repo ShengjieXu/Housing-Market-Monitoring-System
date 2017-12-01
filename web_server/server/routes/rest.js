@@ -13,4 +13,13 @@ router.get('/markets/stats/:type', function(req, res, next) {
   }
 });
 
+router.get('/markets/listings/:region', function(req, res, next) {
+  var region = req.params['region'];
+  console.log('markets/listings/' + region + ' get called');
+
+  rpc_client.getListings(region, function(response) {
+    res.json(response);
+  });
+});
+
 module.exports = router;

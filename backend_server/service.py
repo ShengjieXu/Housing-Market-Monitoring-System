@@ -26,6 +26,12 @@ class RequestHandler(pyjsonrpc.HttpRequestHandler):
         print "getAverageListingPrices is called"
         return operations.getAverageListingPrices()
 
+    @pyjsonrpc.rpcmethod
+    def getListings(self, region):
+        """get Listing Prices for the given region"""
+        print "getListings(%s) is called" % region
+        return operations.getListings(region)
+
 
 # Threading HTTP-Server.
 HTTP_SERVER = pyjsonrpc.ThreadingHttpServer(

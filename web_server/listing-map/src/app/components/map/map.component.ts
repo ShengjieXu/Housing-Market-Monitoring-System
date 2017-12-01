@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Statistics } from '../../models/data.model';
+import { Statistics, Listings } from '../../models/data.model';
 import { DataService } from '../../services/data.service';
 
 declare const L: any;
@@ -26,12 +26,15 @@ export class MapComponent implements OnInit {
   info: any;
   regions: any;
   circles = [];
+  markers = [];
   fillOpacity = 0.7;
 
   intervals: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
 
   statsType = 'Average';
   statistics: Statistics;
+
+  listings: Listings;
 
   constructor(private ds: DataService) { }
 
@@ -123,19 +126,76 @@ export class MapComponent implements OnInit {
     this.ds.getStatistics()
       .subscribe(statistics => {
         this.statistics = statistics;
-        this.visualize();
+        this.visualizeStats();
         this.map.fire('dataload');
       });
   }
 
-  visualize(): void {
-    const mapClass = this;
+  loadListings(region: string): void {
+    this.map.fire('dataloading');
+    this.ds.getListings(region)
+      .subscribe(listings => {
+        this.listings = listings;
+        this.visualizeListings();
+        this.map.fire('dataload');
+      });
+  }
 
+  resetMarkers(): void {
+    // remove existing markers
+    this.markers.forEach(marker => {
+      marker.remove();
+    });
+    this.markers = [];
+  }
+
+  visualizeListings(): void {
+    this.resetMarkers();
+
+    const region = this.listings['region'];
+
+    if (this.listings != null && this.listings['payloads'].length > 0) {
+      const myIcon = L.icon({
+        iconUrl: 'assets/icon_place.svg',
+        iconSize: [38, 95],
+        iconAnchor: [22, 94],
+        popupAnchor: [-3, -76],
+      });
+
+      this.listings['payloads'].forEach(payload => {
+
+        const url =  payload['url'],
+              title = payload['title'],
+              price = payload['price'],
+              geo = payload['geo'],
+              lat = geo['latitude'],
+              lnt = geo['longitude'],
+              bed = payload['bed'],
+              bath = payload['bath'],
+              available_date = payload['available_date'],
+              img_url = payload['img_url'];
+
+        if (lat != null && lnt != null) {
+          const marker = L.marker([lat, lnt], {icon: myIcon}).addTo(this.map);
+          this.markers.push(marker);
+        }
+      });
+
+    }
+  }
+
+  resetCircles(): void {
     // remove existing circles
     this.circles.forEach(circle => {
       circle.remove();
     });
     this.circles = [];
+  }
+
+  visualizeStats(): void {
+    const mapClass = this;
+
+    this.resetCircles();
 
     const type = this.statistics['type'];
     this.statsType = type;
@@ -172,6 +232,9 @@ export class MapComponent implements OnInit {
             // clear tooltip and fill
             this.closeTooltip();
             this.setStyle({fillOpacity: 0});
+
+            // get listings and display
+            mapClass.loadListings(region);
           });
 
           this.circles.push(circle);

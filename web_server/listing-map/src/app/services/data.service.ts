@@ -5,7 +5,7 @@ import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { Statistics } from '../models/data.model';
+import { Statistics, Listings } from '../models/data.model';
 
 const httpOptions = {
   headers: new HttpHeaders({ 'Content-Type': 'application/json' })
@@ -15,6 +15,7 @@ const httpOptions = {
 export class DataService {
 
   private statsAPI = 'api/v1/markets/stats/average';
+  private listingsAPIBase = 'api/v1/markets/listings/';
 
   constructor(private http: HttpClient) { }
 
@@ -29,6 +30,13 @@ export class DataService {
     return this.http.get<any>('assets/regions.json')
     .pipe(
       catchError(this.handleError('getRegions', []))
+    );
+  }
+
+  getListings(region: string): Observable<Listings> {
+    return this.http.get<Listings>(this.listingsAPIBase + region)
+    .pipe(
+      catchError(this.handleError('getListings', {region: '', payloads: []}))
     );
   }
 
