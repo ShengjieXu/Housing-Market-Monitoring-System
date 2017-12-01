@@ -82,6 +82,7 @@ export class MapComponent implements OnInit {
     L.easyButton('<span class="star">&starf;</span>', (btn, map) => {
       this.resetMap();
       this.refillCircles();
+      this.resetMarkers();
     }).addTo(this.map);
   }
 
