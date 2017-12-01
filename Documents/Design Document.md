@@ -34,13 +34,14 @@ Angular | 1. Performance, communicate with servers using JSON. <br> 2. A complet
 Node.js | 1. Performance, non-blocking I/O (since this system relies heavily on database I/O), single threaded and event loop. <br> 2. JavaScript, same language used in the client-side app.
 RESTful API | 1. APIs open to the clients are mostly CRUD ([understand REST and RPC for HTTP APIs](https://www.smashingmagazine.com/2016/09/understanding-rest-and-rpc-for-http-apis/)). <br> 2. A standardized way to model resources on the server, e.g. GET "/api/v1/markets/:id/listings" use it with query strings will allow for easy evolution of this API such as fetching listings with different attributes.
 
-* UI design 1: average prices of all the markets (Regions are shaded in proportion to the measurement of the statistical variables)
+* UI design 1: average prices of all the markets
 
-![ui-design-choropleth-map](ui-design-choropleth-map.png "ui-design-choropleth-map")
+![ui-1](ui-1.png "1")
 
 * UI design 2: new listings in one selected region
 
-![ui-design-markers](ui-design-markers.png "ui-design-markers")
+![ui-2](ui-2.png "2")
+![ui-3](ui-3.png "3")
 
 ### Modules Design: Backend Servers
 
