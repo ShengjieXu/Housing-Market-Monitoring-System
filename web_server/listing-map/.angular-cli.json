@@ -22,12 +22,12 @@
       "styles": [
         "styles.css",
         "../node_modules/leaflet/dist/leaflet.css",
-        "../node_modules/leaflet-loading/Control.Loading.css",
+        "../external_modules/leaflet-loading/Control.Loading.css",
         "../node_modules/leaflet-easybutton/src/easy-button.css"
       ],
       "scripts": [
         "../node_modules/leaflet/dist/leaflet.js",
-        "../node_modules/leaflet-loading/Control.Loading.js",
+        "../external_modules/leaflet-loading/Control.Loading.js",
         "../node_modules/leaflet-easybutton/src/easy-button.js"
       ],
       "environmentSource": "environments/environment.ts",
