@@ -178,6 +178,15 @@ export class MapComponent implements OnInit {
 
         if (lat != null && lnt != null) {
           const marker = L.marker([lat, lnt], {icon: myIcon}).addTo(this.map);
+
+          marker.bindPopup('<b><a href="' + url + '">' + title + '</a></b><br>' +
+            'price:' + price + '<br>' +
+            'bed: ' + bed + '<br>' +
+            'bath: ' + bath + '<br>' +
+            'available date: ' + available_date + '<br>' +
+            '<img src="' + img_url + '" class="thumbnail">'
+          );
+
           this.markers.push(marker);
         }
       });

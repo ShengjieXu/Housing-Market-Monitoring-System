@@ -32,3 +32,8 @@ html, body {
 .star{
   font-size: 1.5em;
 }
+
+.thumbnail {
+  max-height: 200px;
+  max-width: 200px;
+}
